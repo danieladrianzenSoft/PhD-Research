@@ -1,4 +1,4 @@
-%%%HOLA COMO ESTAS
+%%%HOLA COMO ESTAS SEÑOR
 
 clear
 clc
