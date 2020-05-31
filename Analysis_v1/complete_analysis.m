@@ -1,4 +1,4 @@
-%%%HOLA COMO ESTAS SEÑOR me gusta taco bell sdfsdf
+%%%HOLA COMO ESTAS SEÑOR
 
 clear
 clc
