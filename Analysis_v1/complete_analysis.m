@@ -2,10 +2,12 @@
 clear
 clc
 
-N=30;
+N=40;
 overwrite = 1; 
 tictocStep = 10;
 runSims = 0;
+
+%%testing this thing out
 
 filenameParams = 'parameters.xlsx';
 filenameResults = 'B_POI.xlsx';
