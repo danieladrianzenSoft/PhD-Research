@@ -1,7 +1,8 @@
+
 clear
 clc
 
-N=40;
+N=30;
 overwrite = 1; 
 tictocStep = 10;
 runSims = 0;
