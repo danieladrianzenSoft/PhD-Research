@@ -11,37 +11,37 @@ runSims = 1;
 
 filenameParams = 'parameters.xlsx';
 filenameResults = 'B_POI.xlsx';
+progressResults = 'progressResults.xlsx';
 
 if runSims == 1
-    tic
+    start = tic;
     
     newparams = samplingNormalPOI_BinaryCR(filenameParams,N,overwrite);
+    numIters = size(newparams,1);
     %params = readtable(filenameParams);
 
     infected = zeros(size(newparams,1),1);
 %     indexTicToc = 0;
 %     tictocTime = zeros(floor(size(newparams,1)/tictocStep)+1,1);
-    
-    parfor i = 1:size(newparams,1)
+
+    parfor i = 1:numIters
 %         if mod(i,tictocStep) == 0 || i == 1
 %             tic
 %         else
 % 
 %         end
-
         infected(i) = POI_BinaryCR_integrated(newparams(i,:), 0);
-
-%         if mod(i,tictocStep) == 0 || i == 1
+     
+        if mod(i,tictocStep) == 0 || i == 1
 %             indexTicToc = indexTicToc + 1;
 %             tictocTime(indexTicToc) = toc;
-%             percentageDone = i/size(newparams,1)*100;
+             percentageDone = (i/numIters)*100;
+             fprintf('%.2f%% done \n', percentageDone)
 %             totalTime = size(newparams,1)*mean(nonzeros(tictocTime));
 %             remainingTime = totalTime-i*mean(nonzeros(tictocTime));
 %             fprintf(' %.2f mins estimated total run time \n %.2fs per simulation \n %.2f%% done \n %.2f mins remaining \n\n',totalTime/60,mean(nonzeros(tictocTime)),percentageDone,remainingTime/60)
 %         else
-% 
-%         end
-        
+        end        
     end   
     
 %     totalSimTime = tictocTime*N;
@@ -49,7 +49,7 @@ if runSims == 1
     plotparamhist(newparams,'New Parameters')
     writeResultsBinaryPOI(newparams,infected,filenameResults,overwrite) 
     
-    toc
+    fprintf('\nTotal simulation time = %.2f mins', toc(start)/60)
 end
 
 params = readtable(filenameParams);
@@ -64,16 +64,8 @@ if ~isempty(positiveInfection)
     makePlots = 1;
     infected = POI_BinaryCR_integrated(paramsEVAL, makePlots)
 else
-    fprintf('\n No Infections \n')
+    fprintf('\n\nNo Infections \n\n')
 end
-
-% if ~isempty(positiveInfection)
-%     paramsEVAL = params(positiveInfection(1),:);
-%     makePlots = 1;
-%     infected = POI_BinaryCR_EVAL(paramsEVAL, makePlots)
-% else
-%     fprintf('\n No Infections \n')
-% end
 
 %     V_0 = 5*10^4;
 %     h_E = 0.02;
