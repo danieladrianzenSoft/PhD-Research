@@ -1,4 +1,3 @@
-%%%HOLA COMO ESTAS SEÑOR me gusta taco bell
 
 clear
 clc
