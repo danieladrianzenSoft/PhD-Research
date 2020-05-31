@@ -76,7 +76,7 @@ positiveInfection = find(resultsComplete.infected==1);
     V_0 = 5*10^4;
     h_E = 0.01;
     rho = 1400/(24*3600);
-    k_B = 3/(24*3600);
+    k_B = 4/(24*3600);
     %beta = (0.65*10^(-6))/(24*3600);
     T_VD = 0;
     paramsEVAL = table(V_0,h_E,rho,k_B,T_VD);
