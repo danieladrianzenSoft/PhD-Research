@@ -73,9 +73,8 @@ positiveInfection = find(resultsComplete.infected==1);
 %     fprintf('\n No Infections \n')
 % end
 
-
     V_0 = 5*10^4;
-    h_E = 0.02;
+    h_E = 0.01;
     rho = 1400/(24*3600);
     k_B = 3/(24*3600);
     %beta = (0.65*10^(-6))/(24*3600);

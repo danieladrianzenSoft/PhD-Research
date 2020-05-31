@@ -584,7 +584,7 @@ Rv = 100*10^(-7)/2; %diameter = 100nm
 %collisionsCC_t = 4*pi*W*L*(Rc+Rc)*(10^-5)*tar*inf;
 
 %aaa5 = tic;
-perCollisionsInfection = 1/8;
+perCollisionsInfection = 1/10;
 MultConcCollisions = V((numx+indG+indE+indS)+indE+indS+1:(numx+indG+indE+indS)+indE+2*indS,:).*V((indG+indE+1):numx,:);
 collisionsVC_t= 4*pi*(Rc+Rv)*(D_S)*MultConcCollisions;
 cellInfections = perCollisionsInfection*collisionsVC_t;
