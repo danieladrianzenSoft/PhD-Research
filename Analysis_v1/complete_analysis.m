@@ -22,7 +22,7 @@ if runSims == 1
 %     indexTicToc = 0;
 %     tictocTime = zeros(floor(size(newparams,1)/tictocStep)+1,1);
     
-    for i = 1:size(newparams,1)
+    parfor i = 1:size(newparams,1)
 %         if mod(i,tictocStep) == 0 || i == 1
 %             tic
 %         else
