@@ -7,10 +7,10 @@ L_0 = 0;
 V_0 = params.V_0;
 
 %delay = -2 * (60 * 60);
-%delay = params.T_VD;
-delay = 0;
+delay = params.T_VD;
+%delay = 0;
 %C_G0 = (1 * 10^(7));
-C_G0 = 0;
+C_G0 = params.C_G0;
 %V_0 = (1 * 10^(4)); %Virions / ml, Katz lectures XXXXXXXXXX
 %V_0 = (1 * 10^(4));
 %filename = 'POI_LongTerm.csv';

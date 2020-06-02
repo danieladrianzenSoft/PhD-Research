@@ -1,4 +1,4 @@
-function newparams = samplingNormalPOI_BinaryCR(filename,N,overwrite)
+function newparams = samplingNormalPOI_BinaryCR(filename,N,C0,DVdelay,overwrite)
 
 %Viral Load (V_0)
 
@@ -54,12 +54,16 @@ k_B = random(t,N,1);
 % t=truncate(pd,1*10^(-10),inf);
 % D_vS = random(t,N,1);
 
+%Initial Drug Concentration
+
+C_G0 = C0*ones(N,1);
+
 %Drug application vs HIV exposure delay T_VD 
 
-T_VD = zeros(N,1);
+T_VD = DVdelay*ones(N,1);
 
 
-newparams = table(V_0,h_E,rho,k_B,T_VD);
+newparams = table(V_0,h_E,rho,k_B,C_G0,T_VD);
 
 if overwrite == 1
     writetable(newparams,filename,'WriteMode','overwritesheet',...
