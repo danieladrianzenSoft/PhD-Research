@@ -6,7 +6,7 @@
     % 3 - evaluate and plot example results for prior sim where infection = 1.
     % 4 - run independent  sim with specified parameters.
 
-    simConditions = 0; 
+    simConditions = 4; 
     runCluster = 1;
 
     N = 40;
@@ -98,9 +98,9 @@
             batchTime = toc(start)/60;
             cumTime = cumTime + batchTime;
             fprintf(fileID,'\nBatch %d Simulation Time = %.2f mins\nTotal Running Simulation Time = %.2f mins\n', j, batchTime, cumTime);
-            if runCluster == 0
-                fprintf('\nBatch %d Simulation Time = %.2f mins\nTotal Running Simulation Time = %.2f mins\n', j, batchTime, cumTime);
-            end
+            %if runCluster == 0
+            fprintf('\nBatch %d Simulation Time = %.2f mins\nTotal Running Simulation Time = %.2f mins\n', j, batchTime, cumTime);
+            %end
         end
 
     fclose(fileID);   
@@ -129,8 +129,8 @@
 
         V_0 = 5*10^4;
         h_E = 0.02;
-        rho = 1400/(24*3600);
-        k_B = 3/(24*3600);
+        rho = 1500/(24*3600);
+        k_B = 6/(24*3600);
         C_G0 = 0;
         %beta = (0.65*10^(-6))/(24*3600);
         T_VD = 0;

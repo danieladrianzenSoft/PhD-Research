@@ -56,7 +56,7 @@ D_G = 1.27*10^(-8);
 D_E = 7*10^(-11);
 %D_E = 9*10^(-10);
 %D_S = 2*10^(-9); %previously 2x10^(-9)XXXXXXXXXX
-D_S = 1*10^(-9);
+D_S = 2*10^(-9);
 %D_S = params.D_vS;
 %D_S = 4*10^(-7);
 k_D = 0.28/3600;
@@ -584,7 +584,7 @@ Rv = 100*10^(-7)/2; %diameter = 100nm
 %collisionsCC_t = 4*pi*W*L*(Rc+Rc)*(10^-5)*tar*inf;
 
 %aaa5 = tic;
-perCollisionsInfection = 1/10;
+perCollisionsInfection = 1/8;
 MultConcCollisions = V((numx+indG+indE+indS)+indE+indS+1:(numx+indG+indE+indS)+indE+2*indS,:).*V((indG+indE+1):numx,:);
 collisionsVC_t= 4*pi*(Rc+Rv)*(D_S)*MultConcCollisions;
 cellInfections = perCollisionsInfection*collisionsVC_t;
