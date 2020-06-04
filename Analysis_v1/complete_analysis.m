@@ -1,139 +1,144 @@
-
-clear
-clc
-
-%simConditions:
-% 0 - overwrite entire dataset.
-% 1 - restart simulation from last saved batch. 
-% 2 - add new parameters to existing simulation, evaluate batches and append.
-% 3 - evaluate and plot example results for prior sim where infection = 1.
-% 4 - run independent  sim with specified parameters.
-
-simConditions = 2; 
-
-
-N = 40;
-tictocStep = 10;
-batchSize = 20;
-C0 = 0;
-DVdelay = 0;
-
-% label output files with date stamp
-dateStamp = sprintf('%s', datestr(now, 'yy/mm/dd-HH:MM'));
-
-filenameParams = 'parameters.xlsx';
-filenameResults = 'B_POI.xlsx';
-filenameConfig = 'SimulationConfig.txt';
-
-if simConditions < 3
     
-    if N > batchSize
-        batchNum = floor(N/batchSize);
-    else
-        batchNum = 1;
-    end
-            
-    if simConditions == 0
-        overwrite = 1;
-        newparams = samplingNormalPOI_BinaryCR(filenameParams,N,C0,DVdelay,overwrite);
-        OutputPlaceholderTable = array2table(zeros(0,size(newparams,2)+1));
-        OutputPlaceholderTable.Properties.VariableNames = {'V_0','h_E', ...
-           'rho','k_B', 'C_G0','T_VD','infected'};
-        writetable(OutputPlaceholderTable,filenameResults,'WriteMode','overwritesheet','WriteRowNames',true)
-        fileID = fopen(filenameConfig,'w+');
-        fprintf(fileID,'\nDate Started: %s\n',dateStamp);
-        fprintf(fileID,'Number of Iterations: %d\n',N);
-        fprintf(fileID,'Number of Batches: %d\n',batchNum);
-        startBatch = 1;
-    elseif simConditions == 1
-        overwrite = 0;
-        newparams = readtable(filenameParams);
-        fileID = fopen(filenameConfig,'a');
-        startBatch = (size(readtable(filenameResults),1)/batchSize)+1;
-        fprintf(fileID,'\n ------------------------------- \n');
-        fprintf(fileID,'\nDate Resumed: %s\n',dateStamp);
-        fprintf(fileID,'Starting Batch: %d\n',startBatch);
-    elseif simConditions == 2
-        overwrite = 0;
-        newparams = samplingNormalPOI_BinaryCR(filenameParams,N,C0,DVdelay,overwrite);
-        completeParams = readtable(filenameParams);
-        fileID = fopen(filenameConfig,'a');
-        fprintf(fileID,'\n ------------------------------- \n');
-        fprintf(fileID,'\nDate Restarted with New Batches: %s\n',dateStamp);
-        fprintf(fileID,'Number of Additional Iterations: %d\n',N);
-        fprintf(fileID,'Number of Additional Batches: %d\n',batchNum);
-        fprintf(fileID,'Total Number of Iterations: %d\n',size(completeParams,1));
-        startBatch = 1;        
-    end
+    % simConditions:
+    % 0 - overwrite entire dataset.
+    % 1 - restart simulation from last saved batch. 
+    % 2 - add new parameters to existing simulation, evaluate batches and append.
+    % 3 - evaluate and plot example results for prior sim where infection = 1.
+    % 4 - run independent  sim with specified parameters.
+
+    simConditions = 0; 
+    runCluster = 1;
+
+    N = 40;
+    tictocStep = 10;
+    batchSize = 20;
+    C0 = 0;
+    DVdelay = 0;
+
+    % label output files with date stamp
+    dateStamp = sprintf('%s', datestr(now, 'yy/mm/dd-HH:MM'));
+
+    filenameParams = 'parameters.xlsx';
+    filenameResults = 'B_POI.xlsx';
+    filenameConfig = 'SimulationConfig.txt';
     
-    cumTime = 0;
-    
-    for j = startBatch:batchNum
-        
-        if mod(N,batchNum) ~= 0 && j == batchNum
-            numItersBatch = batchSize + mod(N,batchNum);
+    if simConditions < 3
+
+        if N > batchSize
+            batchNum = floor(N/batchSize);
         else
-            numItersBatch = floor(N/batchNum);
+            batchNum = 1;
         end
-        
-        start = tic;
-        batchParams = newparams((j-1)*batchSize+1:j*batchSize,:);
-        infected = zeros(numItersBatch,1);
 
-        %p4 = Par(numIters);
+        if simConditions == 0
+            overwrite = 1;
+            newparams = samplingNormalPOI_BinaryCR(filenameParams,N,C0,DVdelay,overwrite);
+            OutputPlaceholderTable = array2table(zeros(0,size(newparams,2)+1));
+            OutputPlaceholderTable.Properties.VariableNames = {'V_0','h_E', ...
+               'rho','k_B', 'C_G0','T_VD','infected'};
+            writetable(OutputPlaceholderTable,filenameResults,'WriteMode','overwritesheet','WriteRowNames',true)
+            fileID = fopen(filenameConfig,'w+');
+            fprintf(fileID,'\nDate Started: %s\n',dateStamp);
+            fprintf(fileID,'Number of Iterations: %d\n',N);
+            fprintf(fileID,'Number of Batches: %d\n',batchNum);
+            startBatch = 1;
+        elseif simConditions == 1
+            overwrite = 0;
+            newparams = readtable(filenameParams);
+            fileID = fopen(filenameConfig,'a');
+            startBatch = (size(readtable(filenameResults),1)/batchSize)+1;
+            fprintf(fileID,'\n ------------------------------- \n');
+            fprintf(fileID,'\nDate Resumed: %s\n',dateStamp);
+            fprintf(fileID,'Starting Batch: %d\n',startBatch);
+        elseif simConditions == 2
+            overwrite = 0;
+            newparams = samplingNormalPOI_BinaryCR(filenameParams,N,C0,DVdelay,overwrite);
+            completeParams = readtable(filenameParams);
+            fileID = fopen(filenameConfig,'a');
+            fprintf(fileID,'\n ------------------------------- \n');
+            fprintf(fileID,'\nDate Restarted with New Batches: %s\n',dateStamp);
+            fprintf(fileID,'Number of Additional Iterations: %d\n',N);
+            fprintf(fileID,'Number of Additional Batches: %d\n',batchNum);
+            fprintf(fileID,'Total Number of Iterations: %d\n',size(completeParams,1));
+            startBatch = 1;        
+        end
 
-        parfor i = 1:numItersBatch
-            infected(i) = POI_BinaryCR_integrated(batchParams(i,:), 0);
+        cumTime = 0;
 
-            if mod(i,tictocStep) == 0 || i == 1
-                percentageDone = (i/numItersBatch)*100;
-                fprintf('Batch %d of %d, %.2f%% done \n', j, batchNum, percentageDone)
+        for j = startBatch:batchNum
+
+            if mod(N,batchNum) ~= 0 && j == batchNum
+                numItersBatch = batchSize + mod(N,batchNum);
+            else
+                numItersBatch = floor(N/batchNum);
             end
-            %    p4(i) = Par.toc;
+
+            start = tic;
+            batchParams = newparams((j-1)*batchSize+1:j*batchSize,:);
+            infected = zeros(numItersBatch,1);
+
+            %p4 = Par(numIters);
+
+            parfor i = 1:numItersBatch
+                infected(i) = POI_BinaryCR_integrated(batchParams(i,:), 0);
+
+                if mod(i,tictocStep) == 0 || i == 1
+                    percentageDone = (i/numItersBatch)*100;
+                    fprintf('Batch %d of %d, %.2f%% done \n', j, batchNum, percentageDone)
+                end
+                %    p4(i) = Par.toc;
+            end
+            %stop(p4);
+
+            if runCluster == 0
+                plotparamhist(newparams,'New Parameters')
+            end
+            writeResultsBinaryPOI(batchParams,infected,filenameResults,0)
+
+            batchTime = toc(start)/60;
+            cumTime = cumTime + batchTime;
+            fprintf(fileID,'\nBatch %d Simulation Time = %.2f mins\nTotal Running Simulation Time = %.2f mins\n', j, batchTime, cumTime);
+            if runCluster == 0
+                fprintf('\nBatch %d Simulation Time = %.2f mins\nTotal Running Simulation Time = %.2f mins\n', j, batchTime, cumTime);
+            end
         end
-        %stop(p4);
 
-        plotparamhist(newparams,'New Parameters')
-        writeResultsBinaryPOI(batchParams,infected,filenameResults,0)
+    fclose(fileID);   
 
-        batchTime = toc(start)/60;
-        cumTime = cumTime + batchTime;
-        fprintf(fileID,'\nBatch %d Simulation Time = %.2f mins\nTotal Running Simulation Time = %.2f mins\n', j, batchTime, cumTime);
-        fprintf('\nBatch %d Simulation Time = %.2f mins\nTotal Running Simulation Time = %.2f mins\n', j, batchTime, cumTime);
+    elseif simConditions == 3    
+        
+        completeParams = readtable(filenameParams);
+        if runCluster == 0
+            plotparamhist(completeParams,'Complete Parameters')
+        end
 
-    end
-    
-fclose(fileID);   
-    
-elseif simConditions == 3    
-    completeParams = readtable(filenameParams);
-    plotparamhist(completeParams,'Complete Parameters')
+        resultsComplete = readtable(filenameResults);
 
-    resultsComplete = readtable(filenameResults);
+        positiveInfection = find(resultsComplete.infected==1);
 
-    positiveInfection = find(resultsComplete.infected==1);
-    
-    if ~isempty(positiveInfection)
-        paramsEVAL = params(positiveInfection(1),:);
+        if ~isempty(positiveInfection)
+            
+            paramsEVAL = completeParams(positiveInfection(1),:);
+            makePlots = 1;
+            infected = POI_BinaryCR_integrated(paramsEVAL, makePlots);
+        else
+            fprintf('\n\nNo Infections \n\n')
+        end
+
+    elseif simConditions == 4
+
+        V_0 = 5*10^4;
+        h_E = 0.02;
+        rho = 1400/(24*3600);
+        k_B = 3/(24*3600);
+        C_G0 = 0;
+        %beta = (0.65*10^(-6))/(24*3600);
+        T_VD = 0;
+        paramsEVAL = table(V_0,h_E,rho,k_B,C_G0,T_VD);
+        %paramsEVAL = table(V_0,h_E,beta,rho,k_B,T_VD);
         makePlots = 1;
-        infected = POI_BinaryCR_integrated(paramsEVAL, makePlots);
-    else
-        fprintf('\n\nNo Infections \n\n')
+        tic
+        infected = POI_BinaryCR_integrated(paramsEVAL, makePlots)
+        %infected = POI_BinaryCR_CollTest(paramsEVAL)
+        toc
     end
-
-elseif simConditions == 4
-
-    V_0 = 5*10^4;
-    h_E = 0.02;
-    rho = 1400/(24*3600);
-    k_B = 3/(24*3600);
-    %beta = (0.65*10^(-6))/(24*3600);
-    T_VD = 0;
-    paramsEVAL = table(V_0,h_E,rho,k_B,T_VD);
-    %paramsEVAL = table(V_0,h_E,beta,rho,k_B,T_VD);
-    makePlots = 1;
-    tic
-    infected = POI_BinaryCR_integrated(paramsEVAL, makePlots);
-    %infected = POI_BinaryCR_CollTest(paramsEVAL)
-    toc
-end
