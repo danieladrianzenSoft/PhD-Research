@@ -7,7 +7,7 @@
     % 4 - run independent  sim with specified parameters.
 
     simConditions = 4; 
-    runCluster = 1;
+    runCluster = 0;
 
     N = 40;
     tictocStep = 10;
@@ -97,9 +97,9 @@
 
             batchTime = toc(start)/60;
             cumTime = cumTime + batchTime;
-            fprintf(fileID,'\nBatch %d Simulation Time = %.2f mins\nTotal Running Simulation Time = %.2f mins\n', j, batchTime, cumTime);
+            fprintf(fileID,'Batch %d Simulation Time = %.2f mins\nTotal Running Simulation Time = %.2f mins\n\n', j, batchTime, cumTime);
             %if runCluster == 0
-            fprintf('\nBatch %d Simulation Time = %.2f mins\nTotal Running Simulation Time = %.2f mins\n', j, batchTime, cumTime);
+            fprintf('Batch %d Simulation Time = %.2f mins\nTotal Running Simulation Time = %.2f mins\n\n', j, batchTime, cumTime);
             %end
         end
 
@@ -127,13 +127,13 @@
 
     elseif simConditions == 4
 
-        V_0 = 5*10^4;
-        h_E = 0.02;
+        V_0 = 1*10^4;
+        h_E = 0.05;
         rho = 1500/(24*3600);
-        k_B = 6/(24*3600);
+        k_B = 5/(24*3600);
         C_G0 = 0;
         %beta = (0.65*10^(-6))/(24*3600);
-        T_VD = 0;
+        T_VD = 0; 
         paramsEVAL = table(V_0,h_E,rho,k_B,C_G0,T_VD);
         %paramsEVAL = table(V_0,h_E,beta,rho,k_B,T_VD);
         makePlots = 1;
@@ -141,4 +141,5 @@
         infected = POI_BinaryCR_integrated(paramsEVAL, makePlots)
         %infected = POI_BinaryCR_CollTest(paramsEVAL)
         toc
+        
     end
