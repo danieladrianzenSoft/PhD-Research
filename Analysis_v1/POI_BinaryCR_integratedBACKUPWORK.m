@@ -1,7 +1,6 @@
+function infected = POI_BinaryCR_integrated(params, makePlots)
 
-function [infected,t_inf] = POI_BinaryCR_integrated(params, makePlots)
-
-T_0 = 10^(4)*1.088*10^(3); %cells/mg of tissue converted to cells/ml, given density of 1.088g/ml
+T_0 = 10^(4);
 I_0 = 0;
 L_0 = 0;
 V_0 = params.V_0;
@@ -159,9 +158,10 @@ tau_0 = 0;
 
 if (C_G0 == 0)
     
-    t = linspace(0,finalT,numT);
-    tspan = [min(t),max(t)];
+    %t = linspace(0,finalT,numT);
+    tspan = [0,finalT];
     
+    counter = 0;
     IC = [V_0.*ones(1,indG) 0.*ones(1,indE) 0.*ones(1,indS)... %virions
         C_G0.*ones(1,indG) 0.*ones(1,indE) 0.*ones(1,indS)... %TFV ng/ml
         0.*ones(1,indE) 0.*ones(1,indS),... %TFV-DP
@@ -173,11 +173,11 @@ if (C_G0 == 0)
 
     
     %tic
-    [t,V] = ode15s(@(t,V) dvdt(t,V,IC,realx,h_G,h_E,h_S,indG,indE,indS,numx,W,L,... %Geometry
+    [t,V] = ode15s(@(t,V) dvdt(t,V,counter,IC,realx,h_G,h_E,h_S,indG,indE,indS,numx,W,L,... %Geometry
             D_G,D_E,D_S,k_D,k_b,phiGE,phiES,... %Viral Transport
             lambda,dt,rho,c,del,w,eta,lambdal,dl,a,T_0,... %Viral Dynamics
             Dd_G,Dd_E,Dd_S,phid_GE,phid_ES,kd_D,kd_B,kd_L,Vb,... %TFV Transport
-            Kon, Koff,r, phiDP_E,phiDP_S,tau_0), tspan, IC, opts1); %TFV-DP production
+            Kon, Koff,r, phiDP_E,phiDP_S,tau_0), tspan, IC); %TFV-DP production
     %toc
     
     V = V';
@@ -396,20 +396,17 @@ end
 
 %grad = gradient(VT_avg,t);
 
-%tm20 = find(t>=(t(end)-(20*24*3600)),1);
-infectionTP = find((IT_avg)*W*L*(h_E+h_S)>0,1);
+tm20 = find(t>=(t(end)-(20*24*3600)),1);
 
-    if isempty(infectionTP)
+    if (VS_avg(tm20:end)<=0.01*max(VS_avg))
         infected = 0;
-        t_inf = 0;
     else
         infected = 1;
-        t_inf = t(infectionTP);
     end
 
 end
 
-function DVDT = dvdt(t,V,IC,realx,h_G,h_E,h_S,indG,indE,indS,numx,W,L,... %Geometry
+function DVDT = dvdt(t,V,counter,IC,realx,h_G,h_E,h_S,indG,indE,indS,numx,W,L,... %Geometry
         D_G,D_E,D_S,k_D,k_b,phiGE,phiES,... %Viral Transport
         lambda,dt,rho,c,del,w,eta,lambdal,dl,a,T_0,... %Viral Dynamics
         Dd_G,Dd_E,Dd_S,phid_GE,phid_ES,kd_D,kd_B,kd_L,Vb,... %TFV Transport
@@ -419,9 +416,11 @@ function DVDT = dvdt(t,V,IC,realx,h_G,h_E,h_S,indG,indE,indS,numx,W,L,... %Geome
 %AND FORWARD.
 
 %m = 1;
+
 %dxG = realx(2)-realx(1);
 %dxE = realx(indG+2)-realx(indG+1);
 %dxS = realx(indG+indE+2)-realx(indG+indE+1);
+%counter = counter+1
 
 dVdt = zeros(length(IC),size(V,2));
 %dVdx = zeros(length(IC),size(V,2));
@@ -434,58 +433,58 @@ dxE = h_E/(indE-1);
 dxS = h_S/(indS-1);
 
 %HIV INTERFACE
-V_intf1a = (D_G.*V(indG,:)+(D_E.*V(indG+1,:)))./((D_E.*phiGE)+D_G); %C at gel/tissue interface
-V_intf1b = (D_G.*V(indG,:)+(D_E.*V(indG+1,:)))./((D_G./phiGE)+D_E);
-V_intf2a = (D_E.*V(indG+indE,:)+(D_S.*V(indG+indE+1,:)))./((D_S.*phiES)+D_E); %C at gel/tissue interface
-V_intf2b = (D_E.*V(indG+indE,:)+(D_S.*V(indG+indE+1,:)))./((D_E./phiES)+D_S);
+V_intf1a = (D_G.*V(indG)+(D_E.*V(indG+1)))./((D_E.*phiGE)+D_G); %C at gel/tissue interface
+V_intf1b = (D_G.*V(indG)+(D_E.*V(indG+1)))./((D_G./phiGE)+D_E);
+V_intf2a = (D_E.*V(indG+indE)+(D_S.*V(indG+indE+1)))./((D_S.*phiES)+D_E); %C at gel/tissue interface
+V_intf2b = (D_E.*V(indG+indE)+(D_S.*V(indG+indE+1)))./((D_E./phiES)+D_S);
 
 %DRUG INTERFACE
-C_intf_GEa = (Dd_G.*V(numx+indG,:)+(Dd_E.*V(numx+indG+1,:)))./((Dd_E.*phid_GE)+Dd_G); %Right before interface
-C_intf_GEb = (Dd_G.*V(numx+indG,:)+(Dd_E.*V(numx+indG+1,:)))./((Dd_G./phid_GE)+Dd_E); %Right after interface
-C_intf_ESa = (Dd_E.*V(numx+indG+indE,:)+(Dd_S.*V(numx+indG+indE+1,:)))./((Dd_S.*phid_ES)+Dd_E); %Right before interface
-C_intf_ESb = (Dd_E.*V(numx+indG+indE,:)+(Dd_S.*V(numx+indG+indE+1,:)))./((Dd_E./phid_ES)+Dd_S); %Right after interface
+C_intf_GEa = (Dd_G.*V(numx+indG)+(Dd_E.*V(numx+indG+1)))./((Dd_E.*phid_GE)+Dd_G); %Right before interface
+C_intf_GEb = (Dd_G.*V(numx+indG)+(Dd_E.*V(numx+indG+1)))./((Dd_G./phid_GE)+Dd_E); %Right after interface
+C_intf_ESa = (Dd_E.*V(numx+indG+indE)+(Dd_S.*V(numx+indG+indE+1)))./((Dd_S.*phid_ES)+Dd_E); %Right before interface
+C_intf_ESb = (Dd_E.*V(numx+indG+indE)+(Dd_S.*V(numx+indG+indE+1)))./((Dd_E./phid_ES)+Dd_S); %Right after interface
 
 %% VIRUS
 
 ii = 1; %y direction BC zero flux (dcdx=0)
-    dVdt(ii,:) = 2*D_G.*(V(ii+1,:)-V(ii,:))./(dxG.^2)-(k_D.*V(ii,:));
+    dVdt(ii) = 2*D_G.*(V(ii+1)-V(ii))./(dxG.^2)-(k_D.*V(ii));
     %dVdt(i) = 2*D_G.*(V(i+1)-V(i))./(dx.^2);
     
 ii = 2:indG-1; %in gel
     %dVdx(ii,:) = (V(ii+1,:)-V(ii,:))./dxG;
-    d2Vdx2(ii,:) = (V(ii+1,:)-2.*V(ii,:)+V(ii-1,:))./(dxG.^2);
-    dVdt(ii,:) = D_G.*d2Vdx2(ii,:)-(k_D.*V(ii,:));
+    d2Vdx2(ii) = (V(ii+1)-2.*V(ii)+V(ii-1))./(dxG.^2);
+    dVdt(ii) = D_G.*d2Vdx2(ii)-(k_D.*V(ii));
 
 ii = indG; %right before interface - gel
     %dVdx(ii,:) = (V_intf1a - V(ii,:))./dxG;
-    d2Vdx2(ii,:) = (V(ii-1,:)-2.*V(ii,:)+V_intf1a)./(dxG.^2);
-    dVdt(ii,:) = D_G.*d2Vdx2(ii,:)-(k_D.*V(ii,:));
+    d2Vdx2(ii) = (V(ii-1)-2.*V(ii)+V_intf1a)./(dxG.^2);
+    dVdt(ii) = D_G.*d2Vdx2(ii)-(k_D.*V(ii));
 
 ii = (indG+1); %right after interface -in epithelium
     %dVdx(ii,:) = (V(ii+1,:)-V(ii,:))./dxE;
-    d2Vdx2(ii,:) = ((V_intf1b)-2.*V(ii,:)+V(ii+1,:))./(dxE.^2);
-    dVdt(ii,:) = D_E.*d2Vdx2(ii,:);
+    d2Vdx2(ii) = ((V_intf1b)-2.*V(ii)+V(ii+1))./(dxE.^2);
+    dVdt(ii) = D_E.*d2Vdx2(ii);
 
 ii = (indG+2):(indG+indE)-1; %in epithelium
     %dVdx(ii,:) = (V(ii+1,:)-V(ii,:))./dxE;
-    d2Vdx2(ii,:) = (V(ii+1,:)-2.*V(ii,:)+V(ii-1,:))./(dxE.^2);
-    dVdt(ii,:) = D_E.*d2Vdx2(ii,:);
+    d2Vdx2(ii) = (V(ii+1)-2.*V(ii)+V(ii-1))./(dxE.^2);
+    dVdt(ii) = D_E.*d2Vdx2(ii);
 
 ii = indG+indE; %right before interface - epithelium,stroma
     %dVdx(ii,:) = (V_intf2a-V(ii,:))./dxE;
-    d2Vdx2(ii,:) = (V(ii-1,:)-2.*V(ii,:)+V_intf2a)./(dxE.^2);
-    dVdt(ii,:) = D_E.*d2Vdx2(ii,:);
+    d2Vdx2(ii) = (V(ii-1)-2.*V(ii)+V_intf2a)./(dxE.^2);
+    dVdt(ii) = D_E.*d2Vdx2(ii);
 
 ii = (indG+indE+1); %right after interface -in stroma
     %dVdx(ii,:) = (V(ii+1,:)-V(ii,:))./dxS;
-    d2Vdx2(ii,:) = ((V_intf2b)-2.*V(ii,:)+V(ii+1,:))./(dxS.^2);
-    dVdt(ii,:) = D_S.*d2Vdx2(ii,:) - k_b.*V(ii,:) + rho*V(ii+(numx+indE+indS+indS+indS+indS),:);
+    d2Vdx2(ii) = ((V_intf2b)-2.*V(ii)+V(ii+1))./(dxS.^2);
+    dVdt(ii) = D_S.*d2Vdx2(ii) - k_b.*V(ii) + rho*V(ii+(numx+indE+indS+indS+indS+indS));
     %dVdt(i) = D_S.*d2Vdx2(i) - k_b.*V(i);
 
 ii = (indG+indE+2):numx-1; %in stroma
     %dVdx(ii,:) = (V(ii+1,:)-V(ii,:))./dxS;
-    d2Vdx2(ii,:) = (V(ii+1,:)-2.*V(ii,:)+V(ii-1,:))./(dxS.^2);
-    dVdt(ii,:) = D_S.*d2Vdx2(ii,:) - k_b.*V(ii,:) + rho*V(ii+(numx+indE+indS+indS+indS+indS),:);
+    d2Vdx2(ii) = (V(ii+1)-2.*V(ii)+V(ii-1))./(dxS.^2);
+    dVdt(ii) = D_S.*d2Vdx2(ii) - k_b.*V(ii) + rho*V(ii+(numx+indE+indS+indS+indS+indS));
     %dVdt(i) = D_S.*d2Vdx2(i) - k_b.*V(i); 
 
 ii = numx;%end of tissue
@@ -493,7 +492,7 @@ ii = numx;%end of tissue
     %dCdt(i) = D_T.*(-2*C(i)+C(i-1))./(dx.^2) - k_b.*C(i); %BC zero conc CORRECT
     %dVdt(i) = 2*D_T*(V(i-1)-V(i))./(dx.^2) - k_b.*V(i); %BC zero flux
     %dVdt(:,i) = 2*D_S*(V(i-1,:)-V(i,:))./(dxS.^2) - k_b.*V(i,:) + rho*V((numx+indG+indE+indS)+indE+indS+3,:)/indS; %BC zero flux
-    dVdt(ii,:) = 2*D_S*(V(ii-1,:)-V(ii,:))./(dxS.^2) - k_b.*V(ii,:) + rho*V(ii+(numx+indE+indS+indS+indS+indS),:); %BC zero flux
+    dVdt(ii) = 2*D_S*(V(ii-1)-V(ii))./(dxS.^2) - k_b.*V(ii) + rho*V(ii+(numx+indE+indS+indS+indS+indS)); %BC zero flux
     %dVdt(i) = 2*D_S*(V(i-1)-V(i))./(dx.^2) - k_b.*V(i); %BC zero flux
 
     %fprintf('%30s %.5f %s\n', 'Timing', toc(aaa2), 'seconds');
@@ -505,72 +504,72 @@ if (IC(numx+1) ~= 0) %%DRUG: SOLVE ONLY IF C_0 ~= 0:
     ii = numx+1; %TFV at x = 0, zero flux B.C.
         %dVdt(i) = 2*Dd_G.*(V(i+1,:)-V(i,:))./(dxG.^2)-(kd_D.*V(i,:));
         %dVdt(i) = 2*Dd_G.*(V(i+1,:)-V(i,:))./(dxG.^2)-(kd_D.*V(i,:));
-        dVdt(ii,:) = 2*Dd_G.*(V(ii+1,:)-V(ii,:))./(dxG.^2)-(kd_D.*V(ii,:));
+        dVdt(ii) = 2*Dd_G.*(V(ii+1)-V(ii))./(dxG.^2)-(kd_D.*V(ii));
 
     ii = numx+2:numx+indG-1; %TFV in gel
         %dVdx(ii,:) = (V(ii+1,:)-V(ii,:))./dxG;
-        d2Vdx2(ii,:) = (V(ii+1,:)-2.*V(ii,:)+V(ii-1,:))./(dxG.^2);
-        dVdt(ii,:) = Dd_G.*d2Vdx2(ii,:)-(kd_D.*V(ii,:));
+        d2Vdx2(ii) = (V(ii+1)-2.*V(ii)+V(ii-1))./(dxG.^2);
+        dVdt(ii) = Dd_G.*d2Vdx2(ii)-(kd_D.*V(ii));
 
     ii = numx+indG; %right before interface - gel/epithelium
         %dVdx(ii,:) = (C_intf_GEa - V(ii,:))./dxG;
-        d2Vdx2(ii,:) = (V(ii-1,:)-2.*V(ii,:)+C_intf_GEa)./(dxG.^2);
-        dVdt(ii,:) = Dd_G.*d2Vdx2(ii,:)-(kd_D.*V(ii,:));
+        d2Vdx2(ii) = (V(ii-1)-2.*V(ii)+C_intf_GEa)./(dxG.^2);
+        dVdt(ii) = Dd_G.*d2Vdx2(ii)-(kd_D.*V(ii));
 
     ii = (numx+indG+1); %right after interface - gel/epithelium
         %dVdx(ii,:) = (V(ii+1,:)-V(ii,:))./dxE;
-        d2Vdx2(ii,:) = ((C_intf_GEb)-2.*V(ii,:)+V(ii+1,:))./(dxE.^2);
-        dVdt(ii,:) = Dd_E.*d2Vdx2(ii,:);
+        d2Vdx2(ii) = ((C_intf_GEb)-2.*V(ii)+V(ii+1))./(dxE.^2);
+        dVdt(ii) = Dd_E.*d2Vdx2(ii);
 
     ii = (numx+indG+2):(numx+indG+indE-1); %in epithelium
         %dVdx(ii,:) = (V(ii+1,:)-V(ii,:))./dxE;
-        d2Vdx2(ii,:) = (V(ii+1,:)-2.*V(ii,:)+V(ii-1,:))./(dxE.^2);
-        dVdt(ii,:) = Dd_E.*d2Vdx2(ii,:);
+        d2Vdx2(ii) = (V(ii+1)-2.*V(ii)+V(ii-1))./(dxE.^2);
+        dVdt(ii) = Dd_E.*d2Vdx2(ii);
 
     ii = numx+indG+indE; %right before interface - epithelium/stroma
         %dVdx(ii,:) = (C_intf_ESa - V(ii,:))./dxE;
-        d2Vdx2(ii,:) = (V(ii-1,:)-2.*V(ii,:)+C_intf_ESa)./(dxE.^2);
-        dVdt(ii,:) = Dd_E.*d2Vdx2(ii,:);
+        d2Vdx2(ii) = (V(ii-1)-2.*V(ii)+C_intf_ESa)./(dxE.^2);
+        dVdt(ii) = Dd_E.*d2Vdx2(ii);
 
     ii = numx+indG+indE+1; %right after interface - epithelium/stroma
         %dVdx(ii,:) = (V(ii+1,:)-V(ii,:))./dxS;
-        d2Vdx2(ii,:) = ((C_intf_ESb)-2.*V(ii,:)+V(ii+1,:))./(dxS.^2);
-        dVdt(ii,:) = Dd_S.*d2Vdx2(ii,:)- kd_B.*V(ii,:);
+        d2Vdx2(ii) = ((C_intf_ESb)-2.*V(ii)+V(ii+1))./(dxS.^2);
+        dVdt(ii) = Dd_S.*d2Vdx2(ii)- kd_B.*V(ii);
 
     ii = numx+indG+indE+2:numx+indG+indE+indS-1; %in stroma
         %dVdx(ii,:) = (V(ii+1,:)-V(ii,:))./dxS;
-        d2Vdx2(ii,:) = (V(ii+1,:)-2.*V(ii,:)+V(ii-1,:))./(dxS.^2);  
-        dVdt(ii,:) = Dd_S.*d2Vdx2(ii,:) - kd_B.*V(ii,:); 
+        d2Vdx2(ii) = (V(ii+1)-2.*V(ii)+V(ii-1))./(dxS.^2);  
+        dVdt(ii) = Dd_S.*d2Vdx2(ii) - kd_B.*V(ii); 
 
     ii = (numx+indG+indE+indS); %end of stroma
         %dCdt(i) = D_S.*(C(i)-2.*C(i-1))./(dx_S.^2) - k_B.*C(i); %BC zero conc
         %dCdt(i) = D_S.*(-2*C(i)+C(i-1))./(dx.^2) - k_B.*C(i); %BC zero conc CORRECT
         %dVdt(:,i) = 2*Dd_S*(V(i-1,:)-V(i,:))./(dxS.^2) - kd_B.*V(i,:); %BC zero flux
-        dVdt(ii,:) = 2*Dd_S*(V(ii-1,:)-V(ii,:))./(dxS.^2) - kd_B.*V(ii,:); %BC zero flux
+        dVdt(ii) = 2*Dd_S*(V(ii-1)-V(ii))./(dxS.^2) - kd_B.*V(ii); %BC zero flux
     %fprintf('%30s %.5f %s\n', 'Timing', toc(aaa3), 'seconds');
     %aaa4 = tic;
 
     %% TFV-DP
 
     ii = (numx+indG+indE+indS)+1:(numx+indG+indE+indS)+indE; %in epithelium
-        bracks = (V(ii-indE-indS,:).*phiDP_E-V(ii,:)/r);
+        bracks = (V(ii-indE-indS).*phiDP_E-V(ii)/r);
     %     if bracks < 0
     %         bracks = 0;
     %     end
-        dVdt(ii,:) = Kon*bracks.*(bracks>0)-Koff*V(ii,:);
+        dVdt(ii) = Kon*bracks.*(bracks>0)-Koff*V(ii);
 
     ii = (numx+indG+indE+indS)+indE+1:(numx+indG+indE+indS)+indE+indS; %in stroma
-        bracks = (V(ii-indE-indS,:).*phiDP_S-V(ii,:)/r);
+        bracks = (V(ii-indE-indS).*phiDP_S-V(ii)/r);
     %     if bracks < 0
     %         bracks = 0;
     %     end
-        dVdt(ii,:) = Kon*bracks.*(bracks>0)-Koff*V(ii,:);
+        dVdt(ii) = Kon*bracks.*(bracks>0)-Koff*V(ii);
         
 
 %%%%TENOFOVIR CORRECTION DUE TO TENOFOVIR DIPHOSPHATE CONVERSION
 
-    dVdt((numx+indG+1):(numx+indG+indE),:) = dVdt(numx+indG+1:numx+indG+indE,:) - dVdt((numx+indG+indE+indS)+1:(numx+indG+indE+indS)+indE,:); %in epithelium
-    dVdt((numx+indG+indE+1):(numx+indG+indE+indS),:) = dVdt(numx+indG+indE+1:numx+indG+indE+indS,:) - dVdt((numx+indG+indE+indS)+indE+1:(numx+indG+indE+indS)+indE+indS,:); %in stroma
+    dVdt((numx+indG+1):(numx+indG+indE)) = dVdt(numx+indG+1:numx+indG+indE) - dVdt((numx+indG+indE+indS)+1:(numx+indG+indE+indS)+indE); %in epithelium
+    dVdt((numx+indG+indE+1):(numx+indG+indE+indS)) = dVdt(numx+indG+indE+1:numx+indG+indE+indS) - dVdt((numx+indG+indE+indS)+indE+1:(numx+indG+indE+indS)+indE+indS); %in stroma
 
 end 
 
@@ -585,7 +584,7 @@ Rv = 100*10^(-7)/2; %diameter = 100nm
 
 %aaa5 = tic;
 perCollisionsInfection = 1/10;
-MultConcCollisions = V((numx+indG+indE+indS)+indE+indS+1:(numx+indG+indE+indS)+indE+2*indS,:).*V((indG+indE+1):numx,:);
+MultConcCollisions = V((numx+indG+indE+indS)+indE+indS+1:(numx+indG+indE+indS)+indE+2*indS).*V((indG+indE+1):numx);
 collisionsVC_t= 4*pi*(Rc+Rv)*(D_S)*MultConcCollisions;
 cellInfections = perCollisionsInfection*collisionsVC_t;
 
@@ -601,8 +600,8 @@ IC50 = 0.2; %uM
 % end
 
 if (IC(numx+1) ~= 0)
-    q = 1./(1+(IC50./(V((numx+indG+indE+indS)+indE+1:(numx+indG+indE+indS)+indE+indS,:))));
-    %q = q(:);
+    q = 1./(1+(IC50./(V((numx+indG+indE+indS)+indE+1:(numx+indG+indE+indS)+indE+indS))));
+    q = q(:);
 else
     q = zeros(indS,1);
 end
@@ -619,7 +618,7 @@ ii = (numx+indG+indE+indS)+indE+indS+1:(numx+indG+indE+indS)+indE+2*indS; %targe
     %q = 1./(1+(IC50./(V(ii-indS))));
     %q = q(:);
 
-    dVdt(ii,:) = lambda-dt.*V(ii,:)-(1-q).*cellInfections;
+    dVdt(ii) = lambda-dt.*V(ii)-(1-q).*cellInfections;
 
 %fprintf('%30s %.5f %s\n', 'Timing', toc(aaa6), 'seconds');
 %aaa7 = tic;
@@ -632,7 +631,7 @@ ii = (numx+indG+indE+indS)+indE+2*indS+1:(numx+indG+indE+indS)+indE+3*indS; %lat
     %q = 1./(1+(IC50./(V(ii-2*indS))));
     %q = q(:);
 
-    dVdt(ii,:) = eta.*(1-q).*cellInfections-dl.*V(ii,:)-a.*V(ii,:);
+    dVdt(ii) = eta.*(1-q).*cellInfections-dl.*V(ii)-a.*V(ii);
 %fprintf('%30s %.5f %s\n', 'Timing', toc(aaa7), 'seconds');
 %aaa8 = tic;
 ii = (numx+indG+indE+indS)+indE+3*indS+1:(numx+indG+indE+indS)+indE+4*indS; %infected cells
@@ -646,14 +645,14 @@ ii = (numx+indG+indE+indS)+indE+3*indS+1:(numx+indG+indE+indS)+indE+4*indS; %inf
     %q = 1./(1+(IC50./(V(ii-3*indS))));
     %q = q(:);
 
-    dVdt(ii,:) = (1-eta).*(1-q).*cellInfections-del.*V(ii,:)+a.*V(ii-indS,:);
+    dVdt(ii) = (1-eta).*(1-q).*cellInfections-del.*V(ii)+a.*V(ii-indS);
 
     %else
      %   dVdt(:, i) = (1-eta)*cellInfections-del*V(i,:)+a*V(i-1,:);
         %dVdt(:, i) = (1-eta)*beta*V(i-indS-indS,:).*V(i-indS-indS-indS,find(t>=t-tau_0,1)).*exp(-m*tau_0)-del*V(i,:)+a*V(i-indS,:);
     %end
 %fprintf('%30s %.5f %s\n', 'Timing', toc(aaa8), 'seconds');
-DVDT = dVdt;
+DVDT = dVdt(:);
 
 end
 
@@ -696,9 +695,19 @@ B(2*numx+1:2*numx+indE,2*numx+indE+1:2*numx+indE+4*indS)=0; %e
 B(2*numx+1:2*numx+indE,numx+indG+indE+1:2*numx)=0; %f
 B(numx+indG+indE+1:2*numx,2*numx+1:2*numx+indE)=0; %f
 
-%B(numx+1:2*numx+indE+indS,indG+indE+1:numx) = 0;
-%B(indG+indE+1:numx,numx+1:2*numx+indE+indS) = 0;
 
+% V = ones(1,totalSize);
+% B = diag(V);
+% B(1:numx,1:numx) = 1;
+% B(numx+1:2*numx,numx+1:2*numx) = 1;
+% B(2*numx+1:2*numx+indE,numx+indG+1:numx+indG+indE) = 1;
+% B(numx+indG+1:numx+indG+indE,2*numx+1:2*numx+indE) = 1;
+% B(2*numx+indE+1:2*numx+indE+indS,numx+indG+indE+1:2*numx) = 1;
+% B(numx+indG+indE+1:2*numx,2*numx+indE+1:2*numx+indE+indS) = 1;
+% B(2*numx+indE+indS+1:2*numx+indE+indS*4,2*numx+indE+indS+1:2*numx+indE+indS*4) = 1;
+% B(indG+indE+1:numx,2*numx+indE+2*indS:2*numx+indE+4*indS) = 1;
+% B(2*numx+indE+2*indS:2*numx+indE+4*indS,indG+indE+1:numx) = 1;
+%S = ones(totalSize,totalSize);
 S = B;
 
 end

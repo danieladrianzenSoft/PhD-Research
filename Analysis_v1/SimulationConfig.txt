@@ -1,4 +1,4 @@
 
-Date Started: 20/06/04-01:57
-Number of Iterations: 40
-Number of Batches: 2
+Date Started: 20/06/28-22:30
+Number of Iterations: 15000
+Number of Batches: 15

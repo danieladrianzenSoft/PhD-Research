@@ -8,7 +8,7 @@ function createLinePlots(t,x,TFVTissue,TFVdpTissue,HIVTissue,cellsTissue,indE,in
 
     %plot(t,VT_avg*10^(-3),'LineWidth',2); %conversion virions/ml to virions/mg
     %hold on
-    plot(t/24,VS_avg*10^(-3),'LineWidth',2)
+    plot(t/24,VS_avg/(1.088*10^(3)),'LineWidth',2)
     %xlim([0,end])
     %axis([0 max(t)/3600 10^(-1) max(C(1,:))])
     %set(gca,'YScale','log');
@@ -18,7 +18,7 @@ function createLinePlots(t,x,TFVTissue,TFVdpTissue,HIVTissue,cellsTissue,indE,in
     xlabel('Time (days)','FontSize',20,'FontWeight','Bold')
     ylabel('Viral Load (virions/mg)','FontSize',20,'FontWeight','Bold')
     set(gca,'FontSize',18)
-    ylim([0,max(VS_avg*10^(-3))])
+    ylim([0,max(VS_avg)/(1.088*10^(3))])
     %legend('Total in Tissue','Stroma')
     
     
@@ -32,7 +32,7 @@ function createLinePlots(t,x,TFVTissue,TFVdpTissue,HIVTissue,cellsTissue,indE,in
     %set(gca,'YScale','log');
     legend('Target','Latent', 'Infected')
     xlabel('Time (days)','FontSize',20,'FontWeight','Bold')
-    ylabel('Cells (mg^{-1}))','FontSize',20,'FontWeight','Bold')
+    ylabel('Cells (mg^{-1})','FontSize',20,'FontWeight','Bold')
     title('Cell density vs. time','FontSize',22,'FontWeight','Bold')
     set(gca,'FontSize',18)
     

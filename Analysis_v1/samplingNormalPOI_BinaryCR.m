@@ -12,7 +12,7 @@ V_0 = random(t,N,1);
 %Epithelium Thickness (h_E)
 
 mu = 0.02; %cm
-sigma = 0.01;
+sigma = 0.02;
 
 pd = makedist('Normal',mu,sigma);
 t=truncate(pd,0.005,inf);
@@ -38,7 +38,7 @@ rho = random(t,N,1);
 
 %clearance rate (k_B = c)
 
-mu = 26/(24*3600); 
+mu = 25/(24*3600); 
 sigma = 10/(24*3600);
 
 pd = makedist('Normal',mu,sigma);

@@ -1,7 +1,8 @@
 
-function infected = POI_BinaryCR_integrated(params, makePlots)
+function [infected,t_inf] = POI_BinaryCR_integrated(params, makePlots)
 
-T_0 = 10^(4);
+T_0 = 1*10^(4); %cells/ml
+%T_0 = 10^(4)*1.088*10^(3)*1/100; %cells/mg of tissue converted to cells/ml, given density of 1.088g/ml, and given 1% are cd4+ (perelson seminal)
 I_0 = 0;
 L_0 = 0;
 V_0 = params.V_0;
@@ -56,7 +57,7 @@ D_G = 1.27*10^(-8);
 D_E = 7*10^(-11);
 %D_E = 9*10^(-10);
 %D_S = 2*10^(-9); %previously 2x10^(-9)XXXXXXXXXX
-D_S = 2*10^(-9);
+D_S = 8*10^(-10);
 %D_S = params.D_vS;
 %D_S = 4*10^(-7);
 k_D = 0.28/3600;
@@ -92,7 +93,7 @@ kd_B = 0.119/3600;
 kd_L = 1.41/3600;
 Vb = 75*1000;
  
-%%%TTF-DP PRODUCTION:
+%%%TFV-DP PRODUCTION:
 Kon = log(2)/3600;
 Koff = log(2)/(7*24*3600);
 r = 0.1;
@@ -106,8 +107,8 @@ h_G = 0.04; %cm
 h_E = params.h_E;
 h_S = 0.28; %cm
 
-W = 3.35;
-L = 13;
+W = 3.35; %cm
+L = 13; %cm
 %V = 4;
 
 numx = 800;
@@ -134,7 +135,7 @@ realx = [linspace(0,h_G,indG), linspace(h_G+(h_E/indE), h_G+h_E,indE) ...
 %TFV: Gel, Epi, Stro
 %TFV-DP: Epi, Stro
 
-totLength = h_G+h_E+h_S;
+%totLength = h_G+h_E+h_S;
 
 % x = [realx,totLength+realx(2:end),2*totLength+realx(indG+1:indG+indE+indS)-realx(indG)];
 
@@ -148,14 +149,14 @@ totLength = h_G+h_E+h_S;
 S = calcsparsity(numx,indG,indE,indS);
 S = sparse(S);
 
-%opts1 = odeset('Vectorized','on');
+%opts1 = odeset('JPattern',S);
 opts1 = odeset('Vectorized','on','JPattern',S);
 finalT = 300*24*60*60; %100 days
-numT = 2000;
+numT = 1000;
 %tau_0 = 13*24*60*60; %intracellular delay
 tau_0 = 0;
 
-[f,maxPot,minPot,maxConc,minConc] = processingDRCurve(T_0);
+%[f,maxPot,minPot,maxConc,minConc] = processingDRCurve(T_0);
 
 if (C_G0 == 0)
     
@@ -177,8 +178,7 @@ if (C_G0 == 0)
             D_G,D_E,D_S,k_D,k_b,phiGE,phiES,... %Viral Transport
             lambda,dt,rho,c,del,w,eta,lambdal,dl,a,T_0,... %Viral Dynamics
             Dd_G,Dd_E,Dd_S,phid_GE,phid_ES,kd_D,kd_B,kd_L,Vb,... %TFV Transport
-            Kon, Koff,r, phiDP_E,phiDP_S,tau_0,...
-            f,maxPot,minPot,maxConc,minConc), tspan, IC,opts1); %TFV-DP production
+            Kon, Koff,r, phiDP_E,phiDP_S,tau_0), tspan, IC, opts1); %TFV-DP production
     %toc
     
     V = V';
@@ -205,8 +205,7 @@ elseif (delay == 0 && C_G0 ~=0)
             D_G,D_E,D_S,k_D,k_b,phiGE,phiES,... %Viral Transport
             lambda,dt,rho,c,del,w,eta,lambdal,dl,a,T_0,... %Viral Dynamics
             Dd_G,Dd_E,Dd_S,phid_GE,phid_ES,kd_D,kd_B,kd_L,Vb,... %TFV Transport
-            Kon, Koff,r, phiDP_E,phiDP_S,tau_0,...
-            f,maxPot,minPot,maxConc,minConc), tspan, IC,opts1); %TFV-DP production
+            Kon, Koff,r, phiDP_E,phiDP_S,tau_0), tspan, IC,opts1); %TFV-DP production
     %toc
     
     V = V';
@@ -228,8 +227,7 @@ elseif (delay < 0 && C_G0 ~=0)
         D_G,D_E,D_S,k_D,k_b,phiGE,phiES,... %Viral Transport
         lambda,dt,rho,c,del,w,eta,lambdal,dl,a,T_0,... %Viral Dynamics
         Dd_G,Dd_E,Dd_S,phid_GE,phid_ES,kd_D,kd_B,kd_L,Vb,... %TFV Transport
-        Kon, Koff,r, phiDP_E,phiDP_S,tau_0,...
-        f,maxPot,minPot,maxConc,minConc), tspan1, IC1,opts1); %TFV-DP production
+        Kon, Koff,r, phiDP_E,phiDP_S,tau_0), tspan1, IC1, opts1); %TFV-DP production
     
     %Later, semen deposition, so h_G to 0.08cm, and 1:1 dilution -> C_G/2, V_0/2
     V_01 = V_0/2;
@@ -238,22 +236,21 @@ elseif (delay < 0 && C_G0 ~=0)
 %     h_G1 = h_G;
 
     IC = [V_01.*ones(1,indG) 0.*ones(1,indE) 0.*ones(1,indS)... %virions
-        V1(end,numx+1:numx+indG) V1(end,numx+indG+1:numx+indG+indE+indS)... %TFV ng/ml
+        V1(end,numx+1:numx+indG)/2 V1(end,numx+indG+1:numx+indG+indE+indS)... %TFV ng/ml
         V1(end,numx+indG+indE+indS+1:numx+indG+indE+indS+indE+indS),... %TFV-DP
         T_0.*ones(1,indS), L_0.*ones(1,indS), I_0.*ones(1,indS)]; %cells (target, latent, infected)
     
     %t2 = linspace(-1*delay,finalT,numT/2);
     t2 = linspace(0,finalT,numT);
 
-    tspan = [min(t2),max(t2)];
+    tspan2 = [min(t2),max(t2)];
 
     %tic
     [t2,V] = ode15s(@(t2,V) dvdt(t2,V,IC,realx,h_G1,h_E,h_S,indG,indE,indS,numx,W,L,... %Geometry
              D_G,D_E,D_S,k_D,k_b,phiGE,phiES,... %Viral Transport
              lambda,dt,rho,c,del,w,eta,lambdal,dl,a,T_0,... %Viral Dynamics
              Dd_G,Dd_E,Dd_S,phid_GE,phid_ES,kd_D,kd_B,kd_L,Vb,... %TFV Transport
-             Kon, Koff,r, phiDP_E,phiDP_S,tau_0,...
-             f,maxPot,minPot,maxConc,minConc), tspan, IC,opts1); %TFV-DP production
+             Kon, Koff,r, phiDP_E,phiDP_S,tau_0), tspan2, IC,opts1); %TFV-DP production
     %toc
     
     %V = [V1;V]';
@@ -282,14 +279,14 @@ elseif (delay > 0 && C_G0 ~= 0)
         D_G,D_E,D_S,k_D,k_b,phiGE,phiES,... %Viral Transport
         lambda,dt,rho,c,del,w,eta,lambdal,dl,a,T_0,... %Viral Dynamics
         Dd_G,Dd_E,Dd_S,phid_GE,phid_ES,kd_D,kd_B,kd_L,Vb,... %TFV Transport
-        Kon, Koff,r, phiDP_E,phiDP_S,tau_0,...
-        f,maxPot,minPot,maxConc,minConc), tspan1, IC1,opts1); %TFV-DP production
+        Kon, Koff,r, phiDP_E,phiDP_S,tau_0), tspan1, IC1,opts1); %TFV-DP production
+    
     C_G01 = C_G0/2;
     h_G1 = h_G*2; 
 %     h_G1 = h_G;
 %     C_G01 = C_G0;
     
-    IC = [V1(end,1:indG) V1(end,indG+1:numx)... %virions
+    IC = [V1(end,1:indG)/2 V1(end,indG+1:numx)... %virions
         C_G01.*ones(1,indG) 0.*ones(1,indE) 0.*ones(1,indS)... %TFV ng/ml
         0.*ones(1,indE) 0.*ones(1,indS),... %TFV-DP
         T_0.*ones(1,indS), L_0.*ones(1,indS), I_0.*ones(1,indS)]; %cells (target, latent, infected)
@@ -302,8 +299,7 @@ elseif (delay > 0 && C_G0 ~= 0)
             D_G,D_E,D_S,k_D,k_b,phiGE,phiES,... %Viral Transport
             lambda,dt,rho,c,del,w,eta,lambdal,dl,a,T_0,... %Viral Dynamics
             Dd_G,Dd_E,Dd_S,phid_GE,phid_ES,kd_D,kd_B,kd_L,Vb,... %TFV Transport
-            Kon, Koff,r, phiDP_E,phiDP_S,tau_0,...
-            f,maxPot,minPot,maxConc,minConc), tspan2, IC,opts1); %TFV-DP production
+            Kon, Koff,r, phiDP_E,phiDP_S,tau_0), tspan2, IC,opts1); %TFV-DP production
     %toc
     
     V = [V1;V]';
@@ -346,7 +342,7 @@ Ce = V(numx+indG+1:numx+indG+indE,:);
 Cs = V(numx+indG+indE+1:numx+indG+indE+indS,:);
 Cdpe = V(numx+indG+indE+indS+1:numx+indG+indE+indS+indE,:);
 Cdps = V(numx+indG+indE+indS+indE+1:numx+indG+indE+indS+indE+indS,:);
-Cdps_FM = (Cdps/447.173)*10^(3);
+Cdps_FM = (Cdps/447.173)*10^(3); %fmol/mg
 %Ct = C(ng+1:ng+ne+ns,:);
 CG_avg = trapz(Cg)/(indG-1);
 CE_avg = trapz(Ce)/(indE-1);
@@ -399,17 +395,18 @@ if makePlots == 1
     createHeatmap(t/3600,realxTissue,TFVdpTissue,HIVTissue,h_E,h_S)
 end
 
-grad = gradient(VT_avg,t);
+%grad = gradient(VT_avg,t);
 
-%VT_avg(end) <= 0.1
+%tm20 = find(t>=(t(end)-(20*24*3600)),1);
+infectionTP = find((IT_avg)*W*L*(h_E+h_S)>1,1);
 
-    %if (grad(end) <= 10^10 && VT_avg(end) <= 0.005*max(VT_avg))
-    if (grad(end) <= 0.001*max(VS_avg) && VS_avg(end)<=1)
+    if isempty(infectionTP)
         infected = 0;
+        t_inf = 0;
     else
         infected = 1;
+        t_inf = t(infectionTP);
     end
-
 
 end
 
@@ -417,17 +414,21 @@ function DVDT = dvdt(t,V,IC,realx,h_G,h_E,h_S,indG,indE,indS,numx,W,L,... %Geome
         D_G,D_E,D_S,k_D,k_b,phiGE,phiES,... %Viral Transport
         lambda,dt,rho,c,del,w,eta,lambdal,dl,a,T_0,... %Viral Dynamics
         Dd_G,Dd_E,Dd_S,phid_GE,phid_ES,kd_D,kd_B,kd_L,Vb,... %TFV Transport
-        Kon, Koff,r, phiDP_E,phiDP_S,tau_0,... %TFV-DP production
-        f,maxPot,minPot,maxConc,minConc) %Dose-response of TFV-DP
+        Kon, Koff,r, phiDP_E,phiDP_S,tau_0) %TFV-DP production
 
 %NOTE: TO UNDERSTAND THESE EQUATIONS, LOOK UP FOR DIFFERENCE EQUATIONS: CENTRAL, BACKWARD
 %AND FORWARD.
 
-m = 1;
-
+%m = 1;
 %dxG = realx(2)-realx(1);
 %dxE = realx(indG+2)-realx(indG+1);
 %dxS = realx(indG+indE+2)-realx(indG+indE+1);
+
+dVdt = zeros(length(IC),size(V,2));
+%dVdx = zeros(length(IC),size(V,2));
+d2Vdx2 = zeros(length(IC),size(V,2));
+
+%sizeV = size(V)  
 
 dxG = h_G/(indG-1);
 dxE = h_E/(indE-1);
@@ -444,10 +445,6 @@ C_intf_GEa = (Dd_G.*V(numx+indG,:)+(Dd_E.*V(numx+indG+1,:)))./((Dd_E.*phid_GE)+D
 C_intf_GEb = (Dd_G.*V(numx+indG,:)+(Dd_E.*V(numx+indG+1,:)))./((Dd_G./phid_GE)+Dd_E); %Right after interface
 C_intf_ESa = (Dd_E.*V(numx+indG+indE,:)+(Dd_S.*V(numx+indG+indE+1,:)))./((Dd_S.*phid_ES)+Dd_E); %Right before interface
 C_intf_ESb = (Dd_E.*V(numx+indG+indE,:)+(Dd_S.*V(numx+indG+indE+1,:)))./((Dd_E./phid_ES)+Dd_S); %Right after interface
-
-dVdt = zeros(length(IC),size(V,2));
-%dVdx = zeros(length(IC),size(V,2));
-d2Vdx2 = zeros(length(IC),size(V,2));
 
 %% VIRUS
 
@@ -499,9 +496,9 @@ ii = numx;%end of tissue
     %dVdt(:,i) = 2*D_S*(V(i-1,:)-V(i,:))./(dxS.^2) - k_b.*V(i,:) + rho*V((numx+indG+indE+indS)+indE+indS+3,:)/indS; %BC zero flux
     dVdt(ii,:) = 2*D_S*(V(ii-1,:)-V(ii,:))./(dxS.^2) - k_b.*V(ii,:) + rho*V(ii+(numx+indE+indS+indS+indS+indS),:); %BC zero flux
     %dVdt(i) = 2*D_S*(V(i-1)-V(i))./(dx.^2) - k_b.*V(i); %BC zero flux
-    
-%fprintf('%30s %.5f %s\n', 'Timing', toc(aaa2), 'seconds');
-%aaa3 = tic;
+
+    %fprintf('%30s %.5f %s\n', 'Timing', toc(aaa2), 'seconds');
+    %aaa3 = tic;
 
 if (IC(numx+1) ~= 0) %%DRUG: SOLVE ONLY IF C_0 ~= 0:
 
@@ -569,7 +566,7 @@ if (IC(numx+1) ~= 0) %%DRUG: SOLVE ONLY IF C_0 ~= 0:
     %         bracks = 0;
     %     end
         dVdt(ii,:) = Kon*bracks.*(bracks>0)-Koff*V(ii,:);
-
+        
 
 %%%%TENOFOVIR CORRECTION DUE TO TENOFOVIR DIPHOSPHATE CONVERSION
 
@@ -588,14 +585,25 @@ Rv = 100*10^(-7)/2; %diameter = 100nm
 %collisionsCC_t = 4*pi*W*L*(Rc+Rc)*(10^-5)*tar*inf;
 
 %aaa5 = tic;
-perCollisionsInfection = 1/100;
+perCollisionsInfection = 1/10;
 MultConcCollisions = V((numx+indG+indE+indS)+indE+indS+1:(numx+indG+indE+indS)+indE+2*indS,:).*V((indG+indE+1):numx,:);
 collisionsVC_t= 4*pi*(Rc+Rv)*(D_S)*MultConcCollisions;
 cellInfections = perCollisionsInfection*collisionsVC_t;
-Cdps_FM = (V((numx+indG+indE+indS)+indE+1:(numx+indG+indE+indS)+indE+indS)/447.173)*10^(3);
+
+IC50 = 0.2; %uM
+%Cdps_uM = (V((numx+indG+indE+indS)+indE+1:(numx+indG+indE+indS)+indE+indS)/447.173);
+
+% if (IC(numx+1) ~= 0)
+%     %q = PotCalc(log10(Cdps_FM),f,maxPot,minPot,maxConc,minConc);
+%     IC50 = 0.2; %in uM
+%     q = 1./(1+(IC50./(Cdps_uM)));
+% else
+%     q = zeros(indS,1);
+% end
 
 if (IC(numx+1) ~= 0)
-    q = PotCalc(log10(Cdps_FM),f,maxPot,minPot,maxConc,minConc);
+    q = 1./(1+(IC50./(V((numx+indG+indE+indS)+indE+1:(numx+indG+indE+indS)+indE+indS,:))));
+    %q = q(:);
 else
     q = zeros(indS,1);
 end
@@ -604,12 +612,15 @@ end
 
 %aaa6 = tic;
 ii = (numx+indG+indE+indS)+indE+indS+1:(numx+indG+indE+indS)+indE+2*indS; %target cells
+
     
     %dVdt(:,i) = lambda-dt*V(i,:)-beta*V(i,:).*V(i-indS,:);
     %dVdt(:,i) = lambda-dt*V(i,:)-cellInfections-collisionsCC_t;
     
+    %q = 1./(1+(IC50./(V(ii-indS))));
+    %q = q(:);
 
-    dVdt(ii,:) = lambda-dt.*V(ii,:)-(1-q(ii-(numx+indG+indE+indS+indE+indS))).*cellInfections;
+    dVdt(ii,:) = lambda-dt.*V(ii,:)-(1-q).*cellInfections;
 
 %fprintf('%30s %.5f %s\n', 'Timing', toc(aaa6), 'seconds');
 %aaa7 = tic;
@@ -619,7 +630,10 @@ ii = (numx+indG+indE+indS)+indE+2*indS+1:(numx+indG+indE+indS)+indE+3*indS; %lat
     %MultConcCollisions = V(ii-indS,:).*V(ii-indS-indE-indS-indE-indG-indS-indS,:);
     %collisionsVC_t= 4*pi*(Rc+Rv)*(D_S)*MultConcCollisions;
     %cellInfections = perCollisionsInfection*collisionsVC_t;
-    dVdt(ii,:) = eta.*(1-q(ii-(numx+indG+indE+indS+indE+2*indS))).*cellInfections-dl.*V(ii,:)-a.*V(ii,:);
+    %q = 1./(1+(IC50./(V(ii-2*indS))));
+    %q = q(:);
+
+    dVdt(ii,:) = eta.*(1-q).*cellInfections-dl.*V(ii,:)-a.*V(ii,:);
 %fprintf('%30s %.5f %s\n', 'Timing', toc(aaa7), 'seconds');
 %aaa8 = tic;
 ii = (numx+indG+indE+indS)+indE+3*indS+1:(numx+indG+indE+indS)+indE+4*indS; %infected cells
@@ -630,7 +644,10 @@ ii = (numx+indG+indE+indS)+indE+3*indS+1:(numx+indG+indE+indS)+indE+4*indS; %inf
     %MultConcCollisions = V(ii-indS-indS,:).*V(ii-indS-indE-indS-indE-indG-indS-indS-indS,:);
     %collisionsVC_t= 4*pi*(Rc+Rv)*(D_S)*MultConcCollisions;
     %cellInfections = perCollisionsInfection*collisionsVC_t;
-    dVdt(ii,:) = (1-eta).*(1-q(ii-(numx+indG+indE+indS+indE+3*indS))).*cellInfections-del.*V(ii,:)+a.*V(ii-indS,:);
+    %q = 1./(1+(IC50./(V(ii-3*indS))));
+    %q = q(:);
+
+    dVdt(ii,:) = (1-eta).*(1-q).*cellInfections-del.*V(ii,:)+a.*V(ii-indS,:);
 
     %else
      %   dVdt(:, i) = (1-eta)*cellInfections-del*V(i,:)+a*V(i-1,:);
@@ -641,26 +658,26 @@ DVDT = dVdt;
 
 end
 
-function q = PotCalc(C,f,maxPot,minPot,maxConc,minConc)
-
- 
-    %EVALUATING CONCENTRATION TFV-DP IN TISSUE USING FIT 
-    evalPot = f.a0 + f.a1*cos(C*f.w) + f.b1*sin(C*f.w) + ...
-          f.a2*cos(2*C*f.w) + f.b2*sin(2*C*f.w) + ...
-          f.a3*cos(3*C*f.w) + f.b3*sin(3*C*f.w) + ...
-          f.a4*cos(4*C*f.w) + f.b4*sin(4*C*f.w) + ...
-          f.a5*cos(5*C*f.w) + f.b5*sin(5*C*f.w) + ...
-          f.a6*cos(6*C*f.w) + f.b6*sin(6*C*f.w) + ...
-          f.a7*cos(7*C*f.w) + f.b7*sin(7*C*f.w) + ...
-          f.a8*cos(8*C*f.w) + f.b8*sin(8*C*f.w);
-    
-    pot = minPot*(C<=minConc)+maxPot*(C>=maxConc)+evalPot.*(C>minConc & C<maxConc);
-    pot(C<=0) = minPot;
-
-    q = 1-((pot-maxPot)/(minPot-maxPot));
-    q = q(:);
-
-end
+% function q = PotCalc(C,f,maxPot,minPot,maxConc,minConc)
+% 
+%  
+%     %EVALUATING CONCENTRATION TFV-DP IN TISSUE USING FIT 
+%     evalPot = f.a0 + f.a1*cos(C*f.w) + f.b1*sin(C*f.w) + ...
+%           f.a2*cos(2*C*f.w) + f.b2*sin(2*C*f.w) + ...
+%           f.a3*cos(3*C*f.w) + f.b3*sin(3*C*f.w) + ...
+%           f.a4*cos(4*C*f.w) + f.b4*sin(4*C*f.w) + ...
+%           f.a5*cos(5*C*f.w) + f.b5*sin(5*C*f.w) + ...
+%           f.a6*cos(6*C*f.w) + f.b6*sin(6*C*f.w) + ...
+%           f.a7*cos(7*C*f.w) + f.b7*sin(7*C*f.w) + ...
+%           f.a8*cos(8*C*f.w) + f.b8*sin(8*C*f.w);
+%     
+%     pot = minPot*(C<=minConc)+maxPot*(C>=maxConc)+evalPot.*(C>minConc & C<maxConc);
+%     pot(C<=0) = minPot;
+% 
+%     q = 1-((pot-maxPot)/(minPot-maxPot));
+%     q = q(:);
+% 
+% end
 
 
 function S = calcsparsity(numx,indG,indE,indS)
@@ -680,19 +697,9 @@ B(2*numx+1:2*numx+indE,2*numx+indE+1:2*numx+indE+4*indS)=0; %e
 B(2*numx+1:2*numx+indE,numx+indG+indE+1:2*numx)=0; %f
 B(numx+indG+indE+1:2*numx,2*numx+1:2*numx+indE)=0; %f
 
+%B(numx+1:2*numx+indE+indS,indG+indE+1:numx) = 0;
+%B(indG+indE+1:numx,numx+1:2*numx+indE+indS) = 0;
 
-% V = ones(1,totalSize);
-% B = diag(V);
-% B(1:numx,1:numx) = 1;
-% B(numx+1:2*numx,numx+1:2*numx) = 1;
-% B(2*numx+1:2*numx+indE,numx+indG+1:numx+indG+indE) = 1;
-% B(numx+indG+1:numx+indG+indE,2*numx+1:2*numx+indE) = 1;
-% B(2*numx+indE+1:2*numx+indE+indS,numx+indG+indE+1:2*numx) = 1;
-% B(numx+indG+indE+1:2*numx,2*numx+indE+1:2*numx+indE+indS) = 1;
-% B(2*numx+indE+indS+1:2*numx+indE+indS*4,2*numx+indE+indS+1:2*numx+indE+indS*4) = 1;
-% B(indG+indE+1:numx,2*numx+indE+2*indS:2*numx+indE+4*indS) = 1;
-% B(2*numx+indE+2*indS:2*numx+indE+4*indS,indG+indE+1:numx) = 1;
-%S = ones(totalSize,totalSize);
 S = B;
 
 end
